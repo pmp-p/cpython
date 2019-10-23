@@ -88,6 +88,9 @@ except ImportError:
         """ setlocale(integer,string=None) -> string.
             Activates/queries locale processing.
         """
+        if category>LC_ALL:
+            raise Error('_locale emulation invalid category')
+           
         if value not in (None, '', 'C'):
             raise Error('_locale emulation only supports "C" locale')
         return 'C'
