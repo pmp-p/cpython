@@ -188,6 +188,9 @@ def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
         The file is read and scanned in chunks of chunksize bytes.
 
     """
+    if hasattr(sys, 'getandroidapilevel'):
+        return 'libc', f'{sys.getandroidapilevel()}-bionic'    
+   
     V = _comparable_version
     if hasattr(os.path, 'realpath'):
         # Python 2.2 introduced os.path.realpath(); it is used
