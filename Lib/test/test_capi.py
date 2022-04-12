@@ -335,7 +335,7 @@ class CAPITest(unittest.TestCase):
             *_, count = line.split(b' ')
             count = int(count)
             self.assertLessEqual(count, i*5)
-            self.assertGreaterEqual(count, i*5-1)
+            self.assertGreaterEqual(count, i*5-2)
 
     def test_mapping_keys_values_items(self):
         class Mapping1(dict):
@@ -611,6 +611,7 @@ class CAPITest(unittest.TestCase):
             self.assertNotIn(name, modules)
         self.assertEqual(len(modules), total)
 
+    @support.requires_subprocess()
     def test_fatal_error(self):
         # By default, stdlib extension modules are ignored,
         # but not test modules.
@@ -709,6 +710,7 @@ class TestPendingCalls(unittest.TestCase):
         if False and support.verbose:
             print("(%i)"%(len(l),))
 
+    @threading_helper.requires_working_threading()
     def test_pendingcalls_threaded(self):
 
         #do every callback on a separate thread
@@ -839,6 +841,7 @@ class SubinterpreterTest(unittest.TestCase):
 class TestThreadState(unittest.TestCase):
 
     @threading_helper.reap_threads
+    @threading_helper.requires_working_threading()
     def test_thread_state(self):
         # some extra thread-state tests driven via _testcapi
         def target():
@@ -880,6 +883,7 @@ class Test_testinternalcapi(unittest.TestCase):
                     if name.startswith('test_'))
 
 
+@support.requires_subprocess()
 class PyMemDebugTests(unittest.TestCase):
     PYTHONMALLOC = 'debug'
     # '0x04c06e0' or '04C06E0'
@@ -1067,6 +1071,43 @@ class Test_ModuleStateAccess(unittest.TestCase):
 
                 with self.assertRaises(TypeError):
                     increment_count(1, 2, 3)
+
+    def test_get_module_bad_def(self):
+        # PyType_GetModuleByDef fails gracefully if it doesn't
+        # find what it's looking for.
+        # see bpo-46433
+        instance = self.module.StateAccessType()
+        with self.assertRaises(TypeError):
+            instance.getmodulebydef_bad_def()
+
+    def test_get_module_static_in_mro(self):
+        # Here, the class PyType_GetModuleByDef is looking for
+        # appears in the MRO after a static type (Exception).
+        # see bpo-46433
+        class Subclass(BaseException, self.module.StateAccessType):
+            pass
+        self.assertIs(Subclass().get_defining_module(), self.module)
+
+
+class Test_FrameAPI(unittest.TestCase):
+
+    def getframe(self):
+        return sys._getframe()
+
+    def getgenframe(self):
+        yield sys._getframe()
+
+    def test_frame_getters(self):
+        frame = self.getframe()
+        self.assertEqual(frame.f_locals, _testcapi.frame_getlocals(frame))
+        self.assertIs(frame.f_globals, _testcapi.frame_getglobals(frame))
+        self.assertIs(frame.f_builtins, _testcapi.frame_getbuiltins(frame))
+        self.assertEqual(frame.f_lasti, _testcapi.frame_getlasti(frame))
+
+    def test_frame_get_generator(self):
+        gen = self.getgenframe()
+        frame = next(gen)
+        self.assertIs(gen, _testcapi.frame_getgenerator(frame))
 
 
 if __name__ == "__main__":
