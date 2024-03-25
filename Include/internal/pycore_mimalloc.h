@@ -39,7 +39,6 @@ typedef enum {
 #include "mimalloc.h"
 #include "mimalloc/types.h"
 #include "mimalloc/internal.h"
-#endif
 
 #ifdef Py_GIL_DISABLED
 struct _mimalloc_interp_state {
@@ -54,6 +53,6 @@ struct _mimalloc_thread_state {
     mi_tld_t tld;
     struct llist_node page_list;
 };
-#endif
-
+#endif // Py_GIL_DISABLED
+#endif // WITH_MIMALLOC
 #endif // Py_INTERNAL_MIMALLOC_H
